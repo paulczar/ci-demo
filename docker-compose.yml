@@ -1,0 +1,19 @@
+ghost:
+  build: .
+  ports:
+    - 5000:5000
+  volumes:
+    - .:/ghost
+  environment:
+    URL: localhost
+    DB_USER: root
+    DB_PASS: ghost
+  links:
+    - mysql
+mysql:
+  image: percona
+  ports:
+   - "3306:3306"
+  environment:
+    MYSQL_ROOT_PASSWORD: ghost
+    MYSQL_DATABASE: ghost

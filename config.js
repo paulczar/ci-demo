@@ -8,7 +8,7 @@ var path = require('path'),
 
 config = {
     production: {
-        url: "http://" + process.env.URL + ":" + process.env.PORT,
+        url: process.env.URL,
         mail: {},
         database: {
             client: 'mysql',
@@ -26,7 +26,7 @@ config = {
         }
     },
     development: {
-        url: "http://" + process.env.URL + ":" + process.env.PORT,
+        url: process.env.URL,
         database: {
             client: 'sqlite3',
             connection: {

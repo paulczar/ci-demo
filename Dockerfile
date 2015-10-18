@@ -6,7 +6,7 @@ WORKDIR /ghost
 
 COPY . /ghost
 
-RUN npm install --production -q
+RUN npm install --production
 
 EXPOSE 5000
 

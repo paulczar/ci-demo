@@ -1,5 +1,6 @@
-alias npm="dc run --rm --no-deps ghost npm install --production"
-alias up="docker-compose up --force-recreate app"
+alias dc="docker-compose"
+alias npm="docker-compose run --rm --no-deps ghost npm install --production"
+alias up="docker-compose up -d mysql && sleep 5 && docker-compose up -d --force-recreate ghost"
 alias test="docker run -ti --entrypoint='sh' --rm test /app/test"
 alias build="docker-compose build"
 

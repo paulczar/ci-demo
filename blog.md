@@ -119,11 +119,18 @@ When a new `Pull Request` is created by an authorized user against the `developm
 
 Once Jenkins has provided the URL to the epheneral application we can test it there and confirm everything is working fine and you can upload photos etc.
 
+In this case while the blog worked, images could not be uploaded.  This is because it doesn't have any s3 credentials.  I can manually fix this by running `deis config:set -a ghost S3_ACCESS_KEY_ID=*** S3_ACCESS_KEY=***`, if I want this to be a permanent feature I would update the PR builder job in Jenkins to do this as part of the build.
+
 #### Staging
 
-When the `Pull Request` is merged it will fire off two webhooks to jenkins.  The first will delete the demo application for that PR and the second will update the staging environment in deis (http://stage-ghost.ci-demo.paulczar.net) with the contents of the `development` branch.
-
 The `development` branch is protected, and will only accept PRs that have passed tests and had a successful demo environment deployed.
+
+When the `Pull Request` is merged it will fire off two webhooks to Jenkins.  The first will delete the demo application for that PR and the second will update the staging environment in deis (http://stage-ghost.ci-demo.paulczar.net) with the contents of the `development` branch.
+
+![IMAGE JENKINS JOB](http://)
+
+Originally when I started building this demo I had assumed that being able to perform actions on PR merges/closes would be simple, but I quickly discovered none of the CI tools support performing actions on PR close. Thankfully I was able to find a useful [blog](http://chloky.com/github-json-payload-in-jenkins/) post that described how to set up a custom job with a webhook that could process the github payload.
+
 
 #### Production
 

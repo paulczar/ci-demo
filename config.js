@@ -23,6 +23,19 @@ config = {
         server: {
             host: process.env.HOST,
             port: process.env.PORT
+        },
+        paths: {
+            contentPath: path.join(__dirname, '/content/')
+        },
+        storage: {
+            active: 'ghost-s3',
+            'ghost-s3': {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_ACCESS_KEY,
+                bucket: 'ci-demo-ghost-images',
+                region: 'us-east-1',
+                assetHost: 'https://ci-demo-ghost-images.s3.amazonaws.com/'
+            }
         }
     },
     development: {
@@ -40,6 +53,16 @@ config = {
         },
         paths: {
             contentPath: path.join(__dirname, '/content/')
+        },
+        storage: {
+            active: 'ghost-s3',
+            'ghost-s3': {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_ACCESS_KEY,
+                bucket: 'ci-demo-ghost-images',
+                region: 'us-east-1',
+                assetHost: 'https://ci-demo-ghost-images.s3.amazonaws.com/'
+            }
         }
     }
 };

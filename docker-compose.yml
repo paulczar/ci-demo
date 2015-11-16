@@ -8,6 +8,8 @@ ghost:
     URL: http://localhost:5000
     DB_USER: root
     DB_PASS: ghost
+    S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+    S3_ACCESS_KEY: ${S3_ACCESS_KEY}
   links:
     - mysql
 mysql:

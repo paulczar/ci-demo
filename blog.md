@@ -1,10 +1,16 @@
 ## About
 
-This blog post describes (and is hosted on) a demonstration of a CI/CD pipeline where each Pull Request creates an ephemeral environment that could be reviewed as part of the github review process as well as automatically deploying and upgrading a staging and a production environment.
+I've long been saying that Docker and the ecosystem that is building around it is interesting, but isn't really solving problems, just shifting them around. To me the real problems get solved as we start to change the discussion from Infrastructure ( As a Service ) to Platform ( As a Service ).
 
-I chose to demonstrate this using _only_ opensource products. This means I am running everything from the _IAAS_ layer up. You could quite easily skip OpenStack and run this in AWS or Digital Ocean.
+Even Kubernetes to me still feels a lot like IAAS, just with containers being the unit of Infrastructure rather than VMs. There are tools out there that do change this discussion, with Cloud Foundry being the eighteen foot gorilla ( although not specifically in the Docker ecosystem ).
 
-This is not intended to be a detailed "how to build a *AAS platform" so while I mentioned each layer's underlying technology I will not go into detail until we are at the application itself.
+In the docker ecosystem we are starting to see more of these types of Platforms, the first of which was [Dokku](https://github.com/progrium/dokku) which started as a single machine [Heroku](heroku) replacement written in about 100 lines of bash. Building on top of that work other [richer] systems like [DEIS](http://deis.io) and [Flynn](http://flynn.io) started to emerge as well as in-house built systems like Yelp's [Paasta](https://github.com/Yelp/paasta).
+
+Rather than just talking about it I wanted to set up a demo of where I think we should be moving towards (Heroku users will laugh at me for that, they've been doing this for _years_) focused on the Enterprise "We can't use public cloud" stance. This means running everything in-house required to build out a PAAS system and then building an Application (and matching CI/CD workflow) to run on top of it.
+
+I chose to demonstrate this using _only_ open source products. This means I am running everything from the _IAAS_ layer up. You could quite easily skip OpenStack and run this in AWS or Digital Ocean.
+
+It is not intended to be a detailed "how to build a *AAS platform" so while I mentioned each layer's underlying technology I will not go into detail until we are at the application itself.
 
 ## Infrastructure
 
@@ -111,11 +117,11 @@ To git@github.com:paulczar/ci-demo.git
  * [new branch]      s3_for_images -> s3_for_images
 ```
 
-![IMAGE OF GITHUB PR PAGE](http://)
+![IMAGE OF GITHUB PR PAGE](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/github_show_pr_testing-1448031318823.png)
 
 When a new `Pull Request` is created by an authorized user against the `development` branch github will fire a webhook to jenkins which will run any tests and create and deploy to a new ephemeral application in `deis` named for `PR-xx-ghost`.  Once tests are run the app can be viewed at http://pr-xx-ghost.ci-demo.paulczar.net by anyone wishing to review the PR.  Subsequent updates to the PR will simply update the deployed application.
 
-![IMAGE JENKINS JOB](http://)
+![IMAGE JENKINS JOB](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/jenkins_pr_testing-1448031335825.png)
 
 Once Jenkins has provided the URL to the epheneral application we can test it there and confirm everything is working fine and you can upload photos etc.
 
@@ -127,10 +133,11 @@ The `development` branch is protected, and will only accept PRs that have passed
 
 When the `Pull Request` is merged it will fire off two webhooks to Jenkins.  The first will delete the demo application for that PR and the second will update the staging environment in deis (http://stage-ghost.ci-demo.paulczar.net) with the contents of the `development` branch.
 
-![IMAGE JENKINS JOB](http://)
+![IMAGE JENKINS JOB](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_staging_deploy-1448031350720.png)
 
 Originally when I started building this demo I had assumed that being able to perform actions on PR merges/closes would be simple, but I quickly discovered none of the CI tools support performing actions on PR close. Thankfully I was able to find a useful [blog](http://chloky.com/github-json-payload-in-jenkins/) post that described how to set up a custom job with a webhook that could process the github payload.
 
+![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/stage_ghost-1448031723495.png)
 
 #### Production
 
@@ -138,7 +145,13 @@ An application `ghost` lives on the DEIS PAAS and DEIS is configured to point it
 
 To promote the current `development` branch to production, all is needed is a PR into the `master` branch which will kick of some tests ( currently a noop in jenkins ).
 
-The `master` branch is protected and tests must be passed before the PR can be merged into it.  Once merged a final webhook will fire to jenkins which will update the production application in deis (http://ghost.ci-demo.paulczar.net).
+![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/PR_to_master-1448031582932.png)
+
+_The `master` branch is protected and tests must be passed before the PR can be merged into it._
+
+Once merged a final webhook will fire to jenkins which will update the production application in deis (http://ghost.ci-demo.paulczar.net).
+
+![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_prod_deploy-1448031629520.png)
 
 ## Caveats
 

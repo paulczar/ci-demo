@@ -1,32 +1,78 @@
 ## About
 
-I've long been saying that Docker and the ecosystem that is building around it is interesting, but isn't really solving problems, just shifting them around. To me the real problems get solved as we start to change the discussion from Infrastructure ( As a Service ) to Platform ( As a Service ).
+Docker and its nascent ecosystem are interesting, but they aren't solving problems -  just moving them around. For me the real problems get solved when we change the discussion from Infrastructure (as a Service) to Platform (as a Service) and the _unit_ delivered by the Platform being a running application rather than a Virtual Machine.
 
-Even Kubernetes to me still feels a lot like IAAS, just with containers being the unit of Infrastructure rather than VMs. There are tools out there that do change this discussion, with Cloud Foundry being the eighteen foot gorilla ( although not specifically in the Docker ecosystem ).
+Even Kubernetes to me still feels a lot like IaaS, just with containers being the unit of Infrastructure rather than VMs. Of course there are already Platforms out there that focus the user experience towards the application rather than the infrastructure with Cloud Foundry and Heroku being major players in the space.
 
-In the docker ecosystem we are starting to see more of these types of Platforms, the first of which was [Dokku](https://github.com/progrium/dokku) which started as a single machine [Heroku](heroku) replacement written in about 100 lines of bash. Building on top of that work other [richer] systems like [DEIS](http://deis.io) and [Flynn](http://flynn.io) started to emerge as well as in-house built systems like Yelp's [Paasta](https://github.com/Yelp/paasta).
+In the Docker ecosystem we are starting to see more of these types of Platforms, the first of which was [Dokku](https://github.com/progrium/dokku) which started as a single machine [Heroku](http://heroku.com) replacement written in about 100 lines of bash. Building on top of that work other, richer systems like [Deis](http://Deis.io) and [Flynn](http://flynn.io) started to emerge as well as custom solutions built in-house, like Yelp's [PaaSta](https://github.com/Yelp/PaaSta).
 
-Rather than just talking about it I wanted to set up a demo of where I think we should be moving towards (Heroku users will laugh at me for that, they've been doing this for _years_) focused on the Enterprise "We can't use public cloud" stance. This means running everything in-house required to build out a PAAS system and then building an Application (and matching CI/CD workflow) to run on top of it.
+Actions speak louder than words so I decided to document (and demonstration) a Platform built from the ground up (using Open Source projects) and then deploying an application to it via a Continuous Integration/Delivery (CI/CD) pipeline.
 
-I chose to demonstrate this using _only_ open source products. This means I am running everything from the _IAAS_ layer up. You could quite easily skip OpenStack and run this in AWS or Digital Ocean.
+You could (and probably should) be using a public cloud provider for some and allof this stack, however I wanted to demonstrate that a system like this can be built and run internally as not everybody is able (for many valid reasons) able to use public cloud.
 
-It is not intended to be a detailed "how to build a *AAS platform" so while I mentioned each layer's underlying technology I will not go into detail until we are at the application itself.
+As I wrote this I discovered that while figuring out the right combination of tools to run was a fun process, the really interesting stuff was building the actual CI/CD pipeline to deploy and run the application itself. This means that while I'll briefly describe the underlying infrastructure I will not be providing a detailed installation guide.
 
 ## Infrastructure
 
-1. [OpenStack](http://www.openstack.org/) was installed across a set of physical machines using [Ursula](https://github.com/blueboxgroup/ursula).
-2. A 3 node [DEIS](http://deis.io/)
- cluster was then installed on [OpenStack](http://www.openstack.org/) using the terraform instructions [here](https://github.com/paulczar/deis/tree/openstack_provision_script/contrib/openstack).
-3. A standalone coreos node was created using [Terraform](https://terraform.io/) 
-4. A self replicating database was deployed on the [DEIS](http://deis.io/) nodes using the [paulczar/percona-galera](https://github.com/paulczar/docker-percona_galera) docker image which uses [etcd](https://coreos.com/etcd/) to find each other and form a cluster.
-5. A mysql proxy was deployed on the standalone node using the [paulczar/maxscale](https://hub.docker.com/r/paulczar/maxscale/) image which discovers the databases via [etcd](https://coreos.com/etcd/).
-6. [Jenkins](http://jenkins-ci.org/) was deployed to standalone node using the standard [jenkins docker image](https://hub.docker.com/_/jenkins/).
+While an IaaS is not strictly necessary here (I could run Deis straight on bare metal) it makes sense to use something like [OpenStack](http://www.openstack.org/) as provides excellent APIs to spin up VMs.  I installed OpenStack across across a set of physical machines using [Blue Box's](https://www.blueboxcloud.com/) [Ursula](https://github.com/blueboxgroup/ursula).
 
-## Application
+Next the PaaS itself, I have familiarity with [Deis](http://Deis.io/) already and I really like its (Heroku-esque) user experience.  I span up a three node Deis cluster on OpenStack using the terraform instructions [here](https://github.com/paulczar/Deis/tree/openstack_provision_script/contrib/openstack).
 
-The application I chose to demo is the [Ghost blogging platform](https://ghost.org/download/) (literally the blog you are reading right now).   I chose it because it's a fairly simple app with a backing service ( mysql ).  The source including my `Dockerfile` and customizations can be found in the [paulczar/ci-demo](https://github.com/paulczar/ci-demo) github repository.
+I also span an additional three [CoreOS](https://coreos.com) nodes using [Terraform](https://terraform.io/) on which I ran [Jenkins](http://jenkins-ci.org/) using the standard [jenkins docker image](https://hub.docker.com/_/jenkins/).
 
-## Development Environment
+To demonstrate a backing service for my application I also ran a Percona database cluster (one on each of the CoreOS nodes) using the [paulczar/percona-galera](https://github.com/paulczar/docker-percona_galera) docker image which uses [etcd](https://coreos.com/etcd/) to find each other and form automatically create the galera replication set. I also deployed a mysql proxy using the [paulczar/maxscale](https://hub.docker.com/r/paulczar/maxscale/) image which discovers the databases via [etcd](https://coreos.com/etcd/).
+
+## Ghost
+
+The application I chose to demo is the [Ghost blogging platform](https://ghost.org/download/) (literally the blog you are reading right now). I chose it because it's a fairly simple app with well-known backing service (MySQL). The source including my `Dockerfile` and customizations can be found in the [paulczar/ci-demo](https://github.com/paulczar/ci-demo) github repository.
+
+The database backend for ghost is hosted on the percona cluster I have running on the CoreOS nodes and the location and credentials for it are passed into Ghost via environment variables set by the Deis cli when creating the applications.
+
+I wanted to stick to the [GitHub Flow](https://guides.github.com/introduction/flow/) for development as much as possible (the merge/deploy steps are a bit different here, but should be easy enough to follow along with) utilizing GitHub's notification system on Pull Requests and Merges to trigger Jenkins jobs.
+
+I created a `development` branch in the git repository for the application and then used the Deis cli to create two applications [ghost](http://ghost.ci-demo.paulcz.net) from the code in the `master` branch and [stage-ghost](http://stage-ghost.ci-demo.paulcz.net) from the development branch to be my Production and Staging environments.
+
+Both the `development` and `master` branches are protected with GitHub settings that restrict changes from being pushed directly to the branch and any Pull Requests need to pass tests before they can be merged.
+
+## Deis
+
+Deploying applications with Deis is quite easy and very similar to deploying applications to Heroku. As long as your git repo has a `Dockerfile` (or supports being discovered by the [cedar](https://devcenter.heroku.com/articles/cedar) tooling) Deis will figure out what needs to be done to run your application.
+
+After creating an application with the Deis cli you simply push to a remote git server managed by Deis to handle uploading code to install/upgrade the application:
+
+```
+$ git clone https://github.com/deis/example-go.git
+$ cd example-go
+$ deis login http://deis.xxxxx.com
+$ deis create helloworld 
+Creating Application... ...
+done, created helloworld
+Git remote deis added
+$ git push deis master
+
+Counting objects: 39, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (38/38), done.
+Writing objects: 100% (39/39), 5.17 KiB | 0 bytes/s, done.
+Total 39 (delta 12), reused 0 (delta 0)
+
+-----> Building Docker image
+remote: Sending build context to Docker daemon 5.632 kB
+<<<<<<<   SNIP   >>>>>>>
+-----> Launching... 
+       done, helloworld:v2 deployed to Deis
+       http://helloworld.ci-demo.paulcz.net
+```
+
+Interacting with applications deployed to Deis from Jenkins is thus relatively simple, you just need to make sure you have your ssh key and remote git url available to jenkins.
+
+## Jenkins
+
+Put stuff describing jenkins setup and interaction with github, PRs, etc here so we can make later stuff less heavy.
+
+## Continuous Integration / Deployment
+
+### Local Development
 
 Docker combined with `docker-compose` makes for an excellent development environment and I have configured it to launch two containers:
 
@@ -52,7 +98,7 @@ mysql:
     MYSQL_DATABASE: ghost
 ```
 
-I also included an `aliases` file with some useful aliases for common tasks
+I also included an `aliases` file with some useful aliases for common tasks:
 
 ```
 alias dc="docker-compose"
@@ -62,7 +108,7 @@ alias test="docker run -ti --entrypoint='sh' --rm test /app/test"
 alias build="docker-compose build"
 ```
 
-Running the development environment locally is as simple as cloning the repo and calling a few commands from the `aliases` file.  The following examples show how I added [s3 support for storing images](https://www.npmjs.com/package/ghost-s3-storage).
+Running the development environment locally is as simple as cloning the repo and calling a few commands from the `aliases` file.  The following examples show how I added [s3 support for storing images](https://www.npmjs.com/package/ghost-s3-storage):
 
 ```
 $ git clone https://github.com/paulczar/ci-demo.git
@@ -80,7 +126,7 @@ ghost-s3-storage@0.2.2 node_modules/ghost-s3-storage
 $ up
 ```
 
-Docker Compose v1.5 allows variable substitution so I can pull AWS credentials from env variables which means they don't need to be saved to git and each dev can use their own bucket etc.  This is done as simply as adding these lines to the `docker-compose.yml` file in the `environment` section:
+Docker Compose v1.5 allows variable substitution so I can pull AWS credentials from environment variables which means they don't need to be saved to git and each dev can use their own bucket etc.  This is done by simply adding these lines to the [docker-compose.yml](https://github.com/paulczar/ci-demo/blob/development/docker-compose.yml) file in the `environment` section:
 
 ```
 ghost:
@@ -89,19 +135,22 @@ ghost:
     S3_ACCESS_KEY: ${S3_ACCESS_KEY}
 ```
 
-As you can see by the image below ... which is hosted in the s3 bucket... things must be working.
+I then added the appropriate environment variables to my shell and ran `up` to spin up a local development environment of the application. Once it was running I was able to confirm that the plugin was working by uploading the following image to the s3 bucket via the Ghost image upload mechanism:
 
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ghost_blog-1447652183265.png)
 
-## Continuous Integration / Deployment
-
 ### Pull Request
 
-Development workflow is `feature branch` based and `PRs` and `merges` to the git repo will kick of CI events.  Thus I'll want to create a feature branch of my changes and create a PR from that:
+All new work is done roughly fo in feature branches and Pull Requests are made to  the `development` branch of the git repo which will Jenkins watches using the github pull request plugin (GHPR).  The development process looks a little something like this:
 
 ```
 $ git checkout -b s3_for_images
 Switched to a new branch 's3_for_images'
+```
+
+Here I added the s3 module and edited the appropriate sections of the ghost code. You can see the actual commit [here](https://github.com/paulczar/ci-demo/commit/90afc7ae266343709d7daed40a5f49de862905c5).
+
+```
 $ git add .
 $ git commit -m 'use s3 to store images'
 [s3_for_images 55e1b3d] use s3 to store images
@@ -119,43 +168,39 @@ To git@github.com:paulczar/ci-demo.git
 
 ![IMAGE OF GITHUB PR PAGE](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/github_show_pr_testing-1448031318823.png)
 
-When a new `Pull Request` is created by an authorized user against the `development` branch github will fire a webhook to jenkins which will run any tests and create and deploy to a new ephemeral application in `deis` named for `PR-xx-ghost`.  Once tests are run the app can be viewed at http://pr-xx-ghost.ci-demo.paulczar.net by anyone wishing to review the PR.  Subsequent updates to the PR will simply update the deployed application.
+Jenkins will notice When a developer opens a new Pull Request against the development branch and will kick off tests. Jenkins will then create and deploy an ephemeral application in Deis named for the Pull Request ID (PR-11-ghost).
 
 ![IMAGE JENKINS JOB](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/jenkins_pr_testing-1448031335825.png)
 
-Once Jenkins has provided the URL to the epheneral application we can test it there and confirm everything is working fine and you can upload photos etc.
+The ephemeral environment can be viewed at http://pr-xx-ghost.ci-demo.paulczar.net by anyone wishing to review the Pull Request. Subsequent updates to the PR will update the deployed application.
 
-In this case while the blog worked, images could not be uploaded.  This is because it doesn't have any s3 credentials.  I can manually fix this by running `deis config:set -a ghost S3_ACCESS_KEY_ID=*** S3_ACCESS_KEY=***`, if I want this to be a permanent feature I would update the PR builder job in Jenkins to do this as part of the build.
+We can run some manual tests specific to the feature being developed (such as uploading photos) once the URL to the ephemeral application is live.
 
 #### Staging
 
-The `development` branch is protected, and will only accept PRs that have passed tests and had a successful demo environment deployed.
+Jenkins will see that a Pull Request is merged into the development branch and will perform two jobs:
 
-When the `Pull Request` is merged it will fire off two webhooks to Jenkins.  The first will delete the demo application for that PR and the second will update the staging environment in deis (http://stage-ghost.ci-demo.paulczar.net) with the contents of the `development` branch.
+1. Delete the ephemeral environment for Pull Request as it is no longer needed.
+2. Create and deploy a new release of the contents of the development branch to the staging environment in Deis (http://stage-ghost.ci-demo.paulczar.net).
 
 ![IMAGE JENKINS JOB](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_staging_deploy-1448031350720.png)
 
-Originally when I started building this demo I had assumed that being able to perform actions on PR merges/closes would be simple, but I quickly discovered none of the CI tools support performing actions on PR close. Thankfully I was able to find a useful [blog](http://chloky.com/github-json-payload-in-jenkins/) post that described how to set up a custom job with a webhook that could process the github payload.
-
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/stage_ghost-1448031723495.png)
+
+_Originally when I started building this demo I had assumed that being able to perform actions on PR merges/closes would be simple, but I quickly discovered that __none of the CI tools that I looked at supported performing actions on PR close__. Thankfully I was able to find a useful [blog](http://chloky.com/github-json-payload-in-jenkins/) post that described how to set up a custom job with a webhook that could process the GitHub payload._
 
 #### Production
 
-An application `ghost` lives on the DEIS PAAS and DEIS is configured to point it at a production database hosted on the clustered Percona database via the DB loadbalancer.
+Promoting the build from staging to production a two step process:
 
-To promote the current `development` branch to production, all is needed is a PR into the `master` branch which will kick of some tests ( currently a noop in jenkins ).
+1. The user who wishes to promote it simply creates a pull request from the development branch to the master branch. Jenkins will see this and kick off some final tests.
 
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/PR_to_master-1448031582932.png)
 
-_The `master` branch is protected and tests must be passed before the PR can be merged into it._
-
-Once merged a final webhook will fire to jenkins which will update the production application in deis (http://ghost.ci-demo.paulczar.net).
+2. Another user then has to merge that pull request which will fire off a jenkins job to push the code to Deis which cuts a new release and deploys it to the production environment (http://ghost.ci-demo.paulczar.net).
 
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_prod_deploy-1448031629520.png)
 
-## Caveats
+## Conclusion
 
-Currently the `PR` demo environments spin up with a local sqlite database for the sake of getting to the rest of the steps.  I will be updating this soon with scripts that will create a new database based on the staging database.
-
-There is a jenkins job called `UPDATE_STAGING_DATABASE` which will when run ( manually ) delete the staging database and create a new one from a backup of the production database. 
-
+Write some stuff here

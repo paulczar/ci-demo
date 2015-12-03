@@ -2,9 +2,9 @@
 
 Docker and the ecosystem around it have done some great things for developers, but from an operational standpoint, it's mostly just the same old issues with a fresh coat of paint. Real change happens when we change our perspective from _Infrastructure_ (as a Service) to _Platform_ (as a Service), and when the ultimate deployment artifact is a running application instead of a virtual machine.
 
- Even Kubernates still feels a lot like IaaS - just with containers instead of virtual machines. To be fair, there are already some platforms out there that shift the user experience towards the application (Cloud Foundry and Heroku come to mind), but many of them have a large operations burden, or are provided in a SaaS model only.
+Even Kubernates still feels a lot like IaaS - just with containers instead of virtual machines. To be fair, there are already some platforms out there that shift the user experience towards the application (Cloud Foundry and Heroku come to mind), but many of them have a large operations burden, or are provided in a SaaS model only.
 
-In the Docker ecosystem we are starting to see more of these types of platforms, the first of which was [Dokku](https://github.com/progrium/dokku) which started as a single machine [Heroku](http://heroku.com) replacement written in about 100 lines of Bash. Building on top of that work other, richer systems like [Deis](http://Deis.io) and [Flynn](http://flynn.io) have emerged as well as custom solutions built in-house, like Yelp's [PaaSta](https://github.com/Yelp/PaaSta).
+In the Docker ecosystem we are starting to see more of these types of platforms, the first of which was [Dokku](https://github.com/progrium/dokku) which started as a single machine [Heroku](http://heroku.com) replacement written in about 100 lines of Bash. Building on top of that work other, richer systems like [Deis](http://Deis.io) and [Flynn](http://flynn.io) have emerged, as well as custom solutions built in-house, like Yelp's [PaaSta](https://github.com/Yelp/PaaSta).
 
 Actions speak louder than words, so I decided to document (and demonstrate) a platform built from the ground up (using Open Source projects) and then deploy an application to it via a Continuous Integration/Deployment (CI/CD) pipeline.
 
@@ -30,7 +30,7 @@ The hostname and database credentials of the MySQL load balancer are passed into
 
 For development, I wanted to follow the [GitHub Flow](https://guides.github.com/introduction/flow/) methodology as much as possible. My merge/deploy steps are a bit different, but the basic flow is the same. This allows me to use GitHub's notification system to trigger Jenkins jobs when Pull Requests are created or merged.
 
-I used the Deis CLI to create two applications: [ghost](http://ghost.ci-demo.paulcz.net) from the code in the `master` branch, and [stage-ghost](http://stage-ghost.ci-demo.paulcz.net) from the code in the `development` branch. These are my Production and Staging environments, respectively.
+I used the Deis CLI to create two applications: [ghost](http://ghost.ci-demo.paulcz.net) from the code in the `master` branch, and [stage-ghost](http://stage-ghost.ci-demo.paulcz.net) from the code in the `development` branch. These are my `production` and `staging` environments, respectively.
 
 Both the `development` and `master` branches are protected with GitHub settings that restrict changes from being pushed directly to the branch. Furthermore, any Pull Requests need to pass tests before they can be merged.
 
@@ -38,7 +38,10 @@ Both the `development` and `master` branches are protected with GitHub settings 
 
 Deploying applications with Deis is quite easy and very similar to deploying applications to Heroku. As long as your git repo has a `Dockerfile` (or supports being discovered by the [cedar](https://devcenter.heroku.com/articles/cedar) tooling), Deis will figure out what needs to be done to run your application.
 
-Deploying an application with Deis is incredibly simple: First you use `deis create` to create an application ( On success the Deis CLI will add a remote git endpoint); Then you run `git push deis master` which pushes your code and triggers Deis to build and deploy your application:
+Deploying an application with Deis is incredibly simple: 
+
+1. First you use `deis create` to create an application (oan success the Deis CLI will add a remote git endpoint).
+2. Then you run `git push deis master` which pushes your code and triggers Deis to build and deploy your application.
 
 ```
 $ git clone https://github.com/deis/example-go.git
@@ -66,14 +69,30 @@ remote: Sending build context to Docker daemon 5.632 kB
 
 ## Jenkins
 
-Put stuff describing jenkins setup and interaction with github, PRs, etc here so we can make later stuff less heavy.
+After running the Jenkins Docker container I had to do a few things to prepare it:
+
+1. Run `docker exec -ti jenkins bash` to enter the container and install the Deis CLI tool and run `deis login` which saves a session file so that I don't have to login on every job.
+2. Add the GitHub Pull Request Builder (GHPRB) plugin.
+3. Secure it with a password.
+4. Run `docker commit` to commit the state of the Jenkins container.
+
+I also had to create the jobs to perform the actual work. The GHPRB plugin made this fairly simple and most of the actual jobs were variations of the same script:
+
+```
+#!/bin/bash
+
+APP="ghost"
+git checkout master
+
+git remote add deis ssh://git@deis.ci-demo.paulcz.net:2222/${APP}.git
+git push deis master | tee deis_deploy.txt
+```
 
 ## Continuous Integration / Deployment
 
 ### Local Development
 
-
-Docker's `docker-compose` is a great tool for quickly building development environments (combined with Docker Machine it can deploy locally, or to the cloud of your choice). I have placed a `docker-compose.yml` file in the git repo to launch a `ghost` container with the local path mapped in and a `mysql` container:
+Docker's `docker-compose` is a great tool for quickly building development environments (combined with Docker Machine it can deploy locally, or to the cloud of your choice). I have placed a `docker-compose.yml` file in the git repo to launch a `mysql` container for the database, and a `ghost` container:
 
 ```
 ghost:
@@ -140,7 +159,7 @@ I then added the appropriate environment variables to my shell and ran `up` to s
 
 ### Pull Request
 
- All new work is done in feature branches. Pull Requests are made to the `development` branch of the git repo which will Jenkins watches using the github pull request plugin (GHPR). The development process looks a little something like this:
+All new work is done in feature branches. Pull Requests are made to the `development` branch of the git repo which Jenkins watches using the github pull request plugin (GHPR). The development process looks a little something like this:
 
 ```
 $ git checkout -b s3_for_images
@@ -179,8 +198,8 @@ We can run some manual tests specific to the feature being developed (such as up
 
 Jenkins will see that a Pull Request is merged into the development branch and will perform two jobs:
 
-1. Delete the ephemeral environment for Pull Request as it is no longer needed.
-2. Create and deploy a new release of the contents of the development branch to the staging environment in Deis (http://stage-ghost.ci-demo.paulczar.net).
+1. Delete the `ephemeral` environment for Pull Request as it is no longer needed.
+2. Create and deploy a new release of the contents of the `development` branch to the `staging` environment in Deis (http://stage-ghost.ci-demo.paulczar.net).
 
 ![IMAGE JENKINS JOB](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_staging_deploy-1448031350720.png)
 
@@ -190,16 +209,26 @@ _Originally when I started building this demo I had assumed that being able to p
 
 #### Production
 
-Promoting the build from staging to production is a two step process:
+Promoting the build from `staging` to `production` is a two step process:
 
 1. The user who wishes to promote it creates a pull request from the development branch to the master branch. Jenkins will see this and kick off some final tests.
 
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/PR_to_master-1448031582932.png)
 
-2. Another user then has to merge that pull request which will fire off a jenkins job to push the code to Deis which cuts a new release and deploys it to the production environment (http://ghost.ci-demo.paulczar.net).
+2. Another user then has to merge that pull request which will fire off a Jenkins job to push the code to Deis which cuts a new release and deploys it to the `production` environment (http://ghost.ci-demo.paulczar.net).
 
 ![](https://ci-demo-ghost-images.s3.amazonaws.com/2015/Nov/ci_prod_deploy-1448031629520.png)
 
 ## Conclusion
 
-Write some stuff here
+Coming from an Operationss background I though that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise (and it was). What I didn't expect to discover was that actually running an application on that PaaS and figuring out the development workflow and CI/CD pipeline was far more interesting.
+
+Looking back this makes sense, since running a PaaS is not all that different to running any other [complex distributed] system, something I've been doing since I started my career. 
+
+Whereas by building and running an application on that PaaS took me out of my comfort zone and into the shoes of the developers whom I support. I mean sure as a "devops professional" (in very large sarcastic finger quotes) I do do (hehe I said doodoo) development work, but its mostly focussed around building the infrastructure to run the applications.
+
+This excercise also solidified in my mind that a platform (PaaS) is the ultimate in cooperation between Operations and Development in which while there is a seperation of duties (hehe I said doody) where Operations run the platform (and backing services) and Developers write their apps and consume that platform; allowing both to do the things within their core competencies.
+
+
+
+

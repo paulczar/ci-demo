@@ -1,3 +1,5 @@
+# Merry Paasmass and a Happy Continuous Intergration
+
 ## About
 
 Docker and the ecosystem around it have done some great things for developers, but from an operational standpoint, it's mostly just the same old issues with a fresh coat of paint. Real change happens when we change our perspective from _Infrastructure_ (as a Service) to _Platform_ (as a Service), and when the ultimate deployment artifact is a running application instead of a virtual machine.
@@ -221,13 +223,14 @@ Promoting the build from `staging` to `production` is a two step process:
 
 ## Conclusion
 
-Coming from an Operationss background I though that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise (and it was). What I didn't expect to discover was that actually running an application on that PaaS and figuring out the development workflow and CI/CD pipeline was far more interesting.
+Coming from an Operationss background I though that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise. It was, but I didn't expect to discover that actually running an application on that PaaS and figuring out the development workflow and CI/CD pipeline is far more interesting.
 
-Looking back this makes sense, since running a PaaS is not all that different to running any other [complex distributed] system, something I've been doing since I started my career. 
+Building and running an application and CI/CD pipeline on top of the PaaS I built placed me in the shoes of the developers whom I support. It demonstrated to me that my argument of needing to move the cloud user experience from infrastructure to application is indeed a valid argument.
 
-Whereas by building and running an application on that PaaS took me out of my comfort zone and into the shoes of the developers whom I support. I mean sure as a "devops professional" (in very large sarcastic finger quotes) I do do (hehe I said doodoo) development work, but its mostly focussed around building the infrastructure to run the applications.
+I also relearned that while many of us utilize cloud services such as AWS, Heroku, and TravisCI there are good options available for running alternatives to them inhouse and I was somewhat surprised at how powerful and simple Jenkins can be.
 
-This excercise also solidified in my mind that a platform (PaaS) is the ultimate in cooperation between Operations and Development in which while there is a seperation of duties (hehe I said doody) where Operations run the platform (and backing services) and Developers write their apps and consume that platform; allowing both to do the things within their core competencies.
+I am grateful that sysadvent gave me a reason to perform this little experiment and learn as much as I did and hope what I have written passes on some of that knowledge and experience to others.
+
 
 
 

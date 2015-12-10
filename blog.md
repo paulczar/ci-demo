@@ -1,6 +1,4 @@
-# Merry Paasmass and a Happy Continuous Intergration
-
-## About
+# Merry PaaSmas and a Very Continuous Integration
 
 Docker and the ecosystem around it have done some great things for developers, but from an operational standpoint, it's mostly just the same old issues with a fresh coat of paint. Real change happens when we change our perspective from _Infrastructure_ (as a Service) to _Platform_ (as a Service), and when the ultimate deployment artifact is a running application instead of a virtual machine.
 
@@ -42,7 +40,7 @@ Deploying applications with Deis is quite easy and very similar to deploying app
 
 Deploying an application with Deis is incredibly simple: 
 
-1. First you use `deis create` to create an application (oan success the Deis CLI will add a remote git endpoint).
+1. First you use `deis create` to create an application (on success the Deis CLI will add a remote git endpoint).
 2. Then you run `git push deis master` which pushes your code and triggers Deis to build and deploy your application.
 
 ```
@@ -74,7 +72,7 @@ remote: Sending build context to Docker daemon 5.632 kB
 After running the Jenkins Docker container I had to do a few things to prepare it:
 
 1. Run `docker exec -ti jenkins bash` to enter the container and install the Deis CLI tool and run `deis login` which saves a session file so that I don't have to login on every job.
-2. Add the GitHub Pull Request Builder (GHPRB) plugin.
+2. Add the [GitHub Pull Request Builder](https://github.com/janinko/ghprb) (GHPRB) plugin.
 3. Secure it with a password.
 4. Run `docker commit` to commit the state of the Jenkins container.
 
@@ -223,13 +221,13 @@ Promoting the build from `staging` to `production` is a two step process:
 
 ## Conclusion
 
-Coming from an Operationss background I though that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise. It was, but I didn't expect to discover that actually running an application on that PaaS and figuring out the development workflow and CI/CD pipeline is far more interesting.
+Coming from an operations background, I thought that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise. It was! What I didn't expect to discover, however, was that actually running on application on that PaaS would be so compelling. Figuring out the development workflow and CI/CD pipeline was an eye-opener as well.
 
-Building and running an application and CI/CD pipeline on top of the PaaS I built placed me in the shoes of the developers whom I support. It demonstrated to me that my argument of needing to move the cloud user experience from infrastructure to application is indeed a valid argument.
+The most interesting outcome of this exercise, however, is increased empathy: the process of building and using this platform placed me directly in the shoes of the very developers I support. It further demonstrated that by changing the focus of the user experience to that person's core competency (the operator running the platform, and the developer using the platform) we allow the developer to "own" their application in production without them needing to worry about VMs, firewall rules, config management code, etc.
 
-I also relearned that while many of us utilize cloud services such as AWS, Heroku, and TravisCI there are good options available for running alternatives to them inhouse and I was somewhat surprised at how powerful and simple Jenkins can be.
+I also (re-)learned that while many of us default to cloud services such as AWS, Heroku, and Travis CI, there are solid alternatives that can be run in-house. I was also somewhat surprised at how powerful (and simple) Jenkins can be (even if it is still painful to automate).
 
-I am grateful that sysadvent gave me a reason to perform this little experiment and learn as much as I did and hope what I have written passes on some of that knowledge and experience to others.
+I am grateful that Sysadvent gave me a reason to perform this little experiment. I learned a lot, and I hope that this article passes on some of that knowledge and experience to others.
 
 
 

@@ -221,7 +221,7 @@ Promoting the build from `staging` to `production` is a two step process:
 
 ## Conclusion
 
-Coming from an operations background, I thought that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise. It was! What I didn't expect to discover, however, was that actually running on application on that PaaS would be so compelling. Figuring out the development workflow and CI/CD pipeline was an eye-opener as well.
+Coming from an operations background, I thought that figuring out how to build and run a PaaS from the metal up would be a really interesting learning exercise. It was! What I didn't expect to discover, however, was that actually running an application on that PaaS would be so compelling. Figuring out the development workflow and CI/CD pipeline was an eye-opener as well.
 
 That said, the most interesting outcome of this exercise was increased empathy: the process of building and using this platform placed me directly in the shoes of the very developers I support. It further demonstrated that by changing the focus of the user experience to that person's core competency (the operator running the platform, and the developer using the platform) we allow the developer to "own" their application in production without them needing to worry about VMs, firewall rules, config management code, etc.
 

@@ -14,7 +14,7 @@ As I wrote this I discovered that while figuring out the right combination of to
 
 ## Infrastructure
 
-While an IaaS is not strictly necessary here (I could run Deis straight on bare metal), it makes sense to use something like [OpenStack](http://www.openstack.org/) as it provides excellent APIs to spin up VMs. I installed OpenStack across across a set of physical machines using [Blue Box's](https://www.blueboxcloud.com/) [Ursula](https://github.com/blueboxgroup/ursula).
+While an IaaS is not strictly necessary here (I could run Deis straight on bare metal), it makes sense to use something like [OpenStack](http://www.openstack.org/) as it provides the ability to request services via API and use tooling like [Terraform](https://terraform.io/). I installed OpenStack across across a set of physical machines using [Blue Box's](https://www.blueboxcloud.com/) [Ursula](https://github.com/blueboxgroup/ursula).
 
 Next the PaaS itself. I have familiarity with [Deis](http://Deis.io/) already and I really like its (Heroku-esque) user experience. I deployed a three node Deis cluster on OpenStack using the [Terraform](https://terraform.io/) instructions [here](https://github.com/paulczar/Deis/tree/openstack_provision_script/contrib/openstack).
 
